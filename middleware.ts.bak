@@ -1,0 +1,37 @@
+import { NextRequest, NextResponse } from "next/server"
+
+export function middleware(request: NextRequest) {
+  // Protect /admin routes
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    // Check if admin is authenticated via cookie
+    const adminToken = request.cookies.get("admin-token")?.value
+
+    if (!adminToken) {
+      // Redirect to admin login page
+      return NextResponse.redirect(new URL("/admin/login", request.url))
+    }
+  }
+
+  // Protect admin API routes (PATCH and DELETE operations)
+  if (request.nextUrl.pathname.startsWith("/api/articles") && 
+      (request.method === "PATCH" || request.method === "DELETE")) {
+    
+    const token = request.headers.get("x-admin-token")
+    
+    if (!token) {
+      return NextResponse.json(
+        { message: "Unauthorized - Admin token required" },
+        { status: 401 }
+      )
+    }
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: [
+    "/admin/:path*",
+    "/api/articles/:path*",
+  ],
+}
