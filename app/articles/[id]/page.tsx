@@ -8,9 +8,9 @@ import { ARTICLE_CATEGORIES } from "@/lib/constants/articles"
 import { ArticleImageWithFallback } from "@/components/article-image-with-fallback"
 
 interface ArticlePageProps {
-  params: Promise<{
+  params: {
     id: string
-  }>
+  }
 }
 
 interface ImageInContent {
@@ -21,8 +21,12 @@ interface ImageInContent {
 }
 
 export default async function ArticlePage({ params }: ArticlePageProps) {
-  const { id } = await params
-  const article = getArticleById(parseInt(id))
+  const articleId = parseInt(params.id)
+  if (isNaN(articleId)) {
+    notFound();
+  }
+  
+  const article = await getArticleById(articleId)
 
   if (!article) {
     notFound()

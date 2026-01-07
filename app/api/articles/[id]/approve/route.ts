@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    const updated = updateArticleStatus(articleId, newStatus as any)
+    const updated = await updateArticleStatus(articleId, newStatus as any)
 
     if (!updated) {
       return NextResponse.json(

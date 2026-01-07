@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Add article to database
-    const article = addArticle(title, author, email, content, category, excerpt, image)
+    const article = await addArticle(title, author, email, content, category, excerpt, image)
     
     console.log("✅ Article saved successfully:", { id: article.id, title })
 

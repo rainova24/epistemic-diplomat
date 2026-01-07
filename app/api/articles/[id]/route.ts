@@ -32,7 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       )
     }
 
-    const updated = updateArticle(articleId, title, author, email, content, category, excerpt, image)
+    const updated = await updateArticle(articleId, title, author, email, content, category, excerpt, image)
 
     if (!updated) {
       return NextResponse.json(
@@ -76,7 +76,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       )
     }
 
-    const deleted = deleteArticle(articleId)
+    const deleted = await deleteArticle(articleId)
 
     if (!deleted) {
       return NextResponse.json(
