@@ -1,5 +1,12 @@
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 import { ArticleStatus, ARTICLE_STATUS } from "@/lib/constants/articles";
+
+// Instantiate the Redis client from environment variables.
+// The `Redis.fromEnv()` method is the recommended way to connect to Upstash
+// when deploying on Vercel. It automatically uses the `UPSTASH_REDIS_REST_URL`
+// and `UPSTASH_REDIS_REST_TOKEN` environment variables.
+const redis = Redis.fromEnv();
+
 
 // Define the structure of an Article
 export interface Article {
@@ -19,7 +26,7 @@ export interface Article {
 // Helper to create a key for an article
 const articleKey = (id: number) => `article:${id}`;
 
-// --- Core KV Functions ---
+// --- Core Redis Functions ---
 
 export async function addArticle(
   title: string,
@@ -31,7 +38,7 @@ export async function addArticle(
   image?: string
 ): Promise<Article> {
   // Generate a new unique ID
-  const newId = await kv.incr("next_article_id");
+  const newId = await redis.incr("next_article_id");
 
   const now = new Date().toISOString();
 
@@ -50,7 +57,7 @@ export async function addArticle(
   };
 
   // Use a pipeline to perform multiple operations atomically
-  const pipe = kv.pipeline();
+  const pipe = redis.pipeline();
   // Store the full article object as a Hash
   pipe.hset(articleKey(newId), newArticle);
   // Add the article to a sorted set for chronological retrieval
@@ -64,14 +71,14 @@ export async function addArticle(
 
 export async function getArticles(statusFilter?: ArticleStatus): Promise<Article[]> {
   // Get all article keys, sorted from newest to oldest
-  const articleKeys = await kv.zrange("articles_by_date", 0, -1, { rev: true });
+  const articleKeys = await redis.zrange("articles_by_date", 0, -1, { rev: true });
 
   if (articleKeys.length === 0) {
     return [];
   }
 
   // Fetch all articles in a single pipeline for efficiency
-  const pipe = kv.pipeline();
+  const pipe = redis.pipeline();
   articleKeys.forEach(key => pipe.hgetall(key as string));
   const results = await pipe.exec() as (Article | null)[];
 
@@ -85,7 +92,7 @@ export async function getArticles(statusFilter?: ArticleStatus): Promise<Article
 }
 
 export async function getArticleById(id: number): Promise<Article | undefined> {
-  const article = await kv.hgetall<Article>(articleKey(id));
+  const article = await redis.hgetall<Article>(articleKey(id));
   if (!article || Object.keys(article).length === 0) {
     return undefined;
   }
@@ -103,7 +110,7 @@ export async function updateArticle(
   image?: string
 ): Promise<Article | undefined> {
   const key = articleKey(id);
-  const article = await kv.hgetall<Article>(key);
+  const article = await redis.hgetall<Article>(key);
 
   if (!article) return undefined;
 
@@ -118,7 +125,7 @@ export async function updateArticle(
     updatedAt: new Date().toISOString(),
   };
 
-  await kv.hset(key, updatedData);
+  await redis.hset(key, updatedData);
 
   const updatedArticle = { ...article, ...updatedData };
   console.log(`💾 Article updated with ID: ${id}`);
@@ -127,7 +134,7 @@ export async function updateArticle(
 
 export async function updateArticleStatus(id: number, status: ArticleStatus): Promise<Article | undefined> {
   const key = articleKey(id);
-  const article = await kv.hgetall<Article>(key);
+  const article = await redis.hgetall<Article>(key);
 
   if (!article) return undefined;
 
@@ -136,7 +143,7 @@ export async function updateArticleStatus(id: number, status: ArticleStatus): Pr
     updatedAt: new Date().toISOString(),
   };
 
-  await kv.hset(key, updatedData);
+  await redis.hset(key, updatedData);
 
   const updatedArticle = { ...article, ...updatedData };
   console.log(`✅ Article status updated for ID: ${id}. New status: ${status}`);
@@ -147,10 +154,10 @@ export async function deleteArticle(id: number): Promise<boolean> {
   const key = articleKey(id);
   
   // Remove from the sorted set
-  const removedFromSet = await kv.zrem("articles_by_date", key);
+  const removedFromSet = await redis.zrem("articles_by_date", key);
   
   // Delete the hash
-  const deletedHash = await kv.del(key);
+  const deletedHash = await redis.del(key);
 
   if (deletedHash > 0) {
     console.log(`❌ Article deleted with ID: ${id}`);
@@ -167,4 +174,3 @@ export function getImageDir() {
 }
 
 export default { addArticle, getArticles, getArticleById, updateArticle, updateArticleStatus, deleteArticle };
-
