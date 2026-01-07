@@ -1,10 +1,11 @@
 import { Redis } from "@upstash/redis";
 import { ArticleStatus, ARTICLE_STATUS } from "@/lib/constants/articles";
 
-// Instantiate the Redis client from environment variables.
-// The `Redis.fromEnv()` method is the recommended way to connect to Upstash
-// when deploying on Vercel. It automatically uses the `UPSTASH_REDIS_REST_URL`
-// and `UPSTASH_REDIS_REST_TOKEN` environment variables.
+// Instantiate the Redis client.
+// The `new Redis()` constructor automatically reads the connection credentials
+// from environment variables. It looks for `UPSTASH_REDIS_REST_URL` and 
+// `UPSTASH_REDIS_REST_TOKEN`, and falls back to `REDIS_URL`.
+// This makes it flexible for both Vercel KV (older) and Vercel Redis (newer).
 const redis = Redis.fromEnv();
 
 

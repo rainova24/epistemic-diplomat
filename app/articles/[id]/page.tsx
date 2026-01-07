@@ -1,4 +1,4 @@
-import { getArticleById } from "@/lib/db/articles"
+import { getArticleById, getArticles } from "@/lib/db/articles"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,9 +8,9 @@ import { ARTICLE_CATEGORIES } from "@/lib/constants/articles"
 import { ArticleImageWithFallback } from "@/components/article-image-with-fallback"
 
 interface ArticlePageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 interface ImageInContent {
@@ -20,7 +20,16 @@ interface ImageInContent {
   width?: number
 }
 
-export default async function ArticlePage({ params }: ArticlePageProps) {
+export async function generateStaticParams() {
+  const articles = await getArticles();
+ 
+  return articles.map((article) => ({
+    id: article.id.toString(),
+  }));
+}
+
+const ArticlePage = async ({ params: paramsPromise }: ArticlePageProps) => {
+  const params = await paramsPromise;
   const articleId = parseInt(params.id)
   if (isNaN(articleId)) {
     notFound();
@@ -36,19 +45,29 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     return ARTICLE_CATEGORIES.find(c => c.id === id)?.label || id
   }
 
-  // Parse content if it's in the new format
-  let contentText = article.content
-  let images: ImageInContent[] = []
-  
-  try {
-    const parsed = JSON.parse(article.content)
-    if (parsed.text && parsed.images) {
-      contentText = parsed.text
-      images = parsed.images
+  // Parse content
+  let contentText: string;
+  let images: ImageInContent[] = [];
+
+  if (typeof article.content === 'string') {
+    try {
+      const parsed = JSON.parse(article.content);
+      if (parsed.text && Array.isArray(parsed.images)) {
+        contentText = parsed.text;
+        images = parsed.images;
+      } else {
+        contentText = article.content;
+      }
+    } catch (e) {
+      contentText = article.content;
     }
-  } catch {
-    // Content is in old format (plain text)
-    contentText = article.content
+  } else if (typeof article.content === 'object' && article.content !== null && 'text' in article.content) {
+    // It's already an object, as returned by hgetall
+    contentText = (article.content as any).text;
+    images = (article.content as any).images || [];
+  } else {
+    // Fallback for unexpected content types
+    contentText = String(article.content || '');
   }
 
   // Function to render content with inline images
@@ -137,4 +156,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     </main>
   )
 }
+
+export default ArticlePage;
 
