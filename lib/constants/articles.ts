@@ -8,6 +8,8 @@ export const ARTICLE_CATEGORIES = [
   { id: "metafisika", label: "Metafisika" },
   { id: "filosofi-agama", label: "Filosofi Agama" },
   { id: "pendidikan", label: "Pendidikan" },
+  { id: "artikel-opini", label: "Artikel Opini" },
+  { id: "lainnya", label: "Lainnya" },
   { id: "semua", label: "Semua" },
 ]
 

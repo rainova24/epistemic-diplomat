@@ -157,6 +157,16 @@ export function SubmitArticleDialog({ open, onOpenChange }: SubmitArticleDialogP
       return
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Validasi Gagal ❌",
+        description: "Format alamat email tidak valid",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     try {
       // Get first image as featured image (or undefined)
