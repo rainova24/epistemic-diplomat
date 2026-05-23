@@ -21,11 +21,16 @@ interface ImageInContent {
 }
 
 export async function generateStaticParams() {
-  const articles = await getArticles();
- 
-  return articles.map((article) => ({
-    id: article.id.toString(),
-  }));
+  try {
+    const articles = await getArticles();
+   
+    return articles.map((article) => ({
+      id: article.id.toString(),
+    }));
+  } catch (error) {
+    console.error("Build-time error fetching articles:", error);
+    return []; // Return empty array to allow build to continue
+  }
 }
 
 const ArticlePage = async ({ params: paramsPromise }: ArticlePageProps) => {
