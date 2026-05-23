@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("❌ Error submitting article:", error)
     return NextResponse.json(
-      { message: "Terjadi kesalahan saat menyimpan tulisan" },
+      { message: `Terjadi kesalahan saat menyimpan tulisan: ${error instanceof Error ? error.message : String(error)}` },
       { status: 500 }
     )
   }
